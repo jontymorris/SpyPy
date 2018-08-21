@@ -8,12 +8,12 @@ import pyautogui, socket, json, pickle
 class ControllerHandler:
     ''' This acts as a gateway for interacting with the controller '''
 
-    def __init__(self):
+    def __init__(self, address):
         self.event_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.event_socket.bind(('192.168.1.194', 25565))
+        self.event_socket.bind((address, 5790))
 
         self.image_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.image_socket.bind(('192.168.1.194', 5791))
+        self.image_socket.bind((address, 5791))
 
         self.event_thread = Thread(target=self.event_handler)
         self.event_thread.start()
@@ -22,36 +22,36 @@ class ControllerHandler:
     
     def image_handler(self):
         self.image_socket.listen(1)
-        print("Now listening")
+        delimiter = "\n\n".encode("utf-8")
 
         while True:
-            connection, address = self.image_socket.accept()
-            print("Image connection from " + address[0])
-
+            conn, address = self.image_socket.accept()
+            
             try:
                 while True:
                     screenshot = get_screenshot()
                     data = pickle.dumps(screenshot)
                     
-                    connection.sendall(data)
-                    connection.send("\n".encode("utf-8"))
+                    conn.send(data)
+                    conn.send(delimiter)
                     
-                    sleep(1)
+                    sleep(0.01)
             except Exception as exp:
                 print(exp)
-            finally:
-                connection.close()
-
+            
+            conn.close()
 
     def event_handler(self):
         self.event_socket.listen(1)
 
         while True:
-            connection, address = self.event_socket.accept()
+            print("Now listening...")
+            conn, address = self.event_socket.accept()
+            print("Connection from " + address[0] + "\n")
 
             try:
                 while True:
-                    data = connection.recv(100)
+                    data = conn.recv(100)
 
                     if data:
                         options = json.loads(data.decode("utf-8"))
@@ -63,8 +63,8 @@ class ControllerHandler:
                             press_key(options["char"])
             except Exception as exp:
                 print(exp)
-            finally:
-                connection.close()
+            
+            conn.close()
 
 
 def get_screenshot():
@@ -88,7 +88,8 @@ def click(x, y, mouse_button):
         pyautogui.rightClick()
 
 def press_key(char):
+    ''' Presses a key on the client computer '''
     pyautogui.press(char)
 
-# create a new handler
-ControllerHandler()
+# Creates a new handler
+ControllerHandler("192.168.1.194")

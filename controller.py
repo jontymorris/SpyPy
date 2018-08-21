@@ -9,27 +9,51 @@ class ClientHandler:
 
     def __init__(self, address):
         self.event_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.event_socket.connect((address, 25565))
-
+        self.event_socket.connect((address, 5790))
+        
         self.image_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.image_socket.connect((address, 5791))
 
+        self.is_running = True
         self.image_thread = Thread(target=self.image_handler)
         self.image_thread.start()
 
         print("Connected to " + address)
     
+    def disconnect(self):
+        self.is_running = False
+        self.event_socket.close()
+
     def image_handler(self):
         image_data = []
+        delimiter = "\n\n".encode("utf-8")
 
-        while True:
+        while self.is_running:
             data = self.image_socket.recv(4096)
+            
+            if data.endswith(delimiter):
+                data = data[:-2]
 
-            # TODO: check for new line character
-            image_data.append(data)
+                if data != []:
+                    image_data.append(data)
 
-            #image = pickle.loads(data)
-            #image_label.image = ImageTk.PhotoImage(image)
+                try:
+                    pickled_image = b''.join(image_data)
+                    screenshot = pickle.loads(pickled_image)
+
+                    tk_image = ImageTk.PhotoImage(screenshot)
+                    
+                    image_label.configure(image=tk_image)
+                    image_label.image = tk_image
+                except Exception as exp:
+                    print(exp)
+                
+                image_data = []
+
+            else:
+                image_data.append(data)
+        
+        self.image_socket.close()
 
     def send_click(self, x, y, mouse_button):
         options = {
@@ -69,8 +93,6 @@ root = Tk()
 root.title("PySpy")
 root.resizable(False, False)
 
-#screenshot = ImageTk.PhotoImage(get_screenshot())
-
 image_label = Label(root)
 image_label.pack()
 
@@ -80,5 +102,5 @@ image_label.bind("<Button-2>", middle_click)
 image_label.bind("<Button-3>", right_click)
 
 client = ClientHandler("192.168.1.194")
-
 root.mainloop()
+client.disconnect()
