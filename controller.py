@@ -133,7 +133,8 @@ image_label.bind("<Button-2>", middle_click)
 image_label.bind("<Button-3>", right_click)
 
 # Connect to the client
-client = ClientHandler("192.168.1.194")
+ip = input('enter client ip: ')
+client = ClientHandler(ip)
 
 # Start displaying the window
 root.mainloop()
