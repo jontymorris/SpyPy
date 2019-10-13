@@ -8,14 +8,14 @@ import pyautogui, socket, json, pickle
 class ControllerHandler:
     ''' This acts as a gateway for interacting with the controller '''
 
-    def __init__(self, address):
+    def __init__(self):
         self.delimiter = "\n\n".encode("utf-8")
 
         self.event_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.event_socket.bind((address, 5790))
+        self.event_socket.bind(('127.0.0.1', 5790))
 
         self.image_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.image_socket.bind((address, 5791))
+        self.image_socket.bind(('127.0.0.1', 5791))
 
         self.event_thread = Thread(target=self.event_handler)
         self.event_thread.start()
@@ -116,4 +116,4 @@ def press_key(char):
     pyautogui.press(char)
 
 # Creates a new handler
-ControllerHandler("192.168.1.194")
+ControllerHandler()
